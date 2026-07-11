@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fun Math Quiz!</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Comic Sans MS', 'Trebuchet MS', 'Segoe UI', sans-serif;
+    background: linear-gradient(160deg, #fff6e5 0%, #e8f7ff 50%, #eefcec 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 480px;
+    background: #ffffff;
+    border-radius: 28px;
+    box-shadow: 0 10px 0 #ffe1a8, 0 16px 30px rgba(0,0,0,0.08);
+    padding: 24px 20px 28px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .pill {
+    background: #fff2cc;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: bold;
+    font-size: 18px;
+    color: #7a5b00;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pill.timer { background: #d8f3ff; color: #0a5f7a; }
+  .pill.score { background: #e6ffe0; color: #2a7a1e; }
+
+  h1 {
+    font-size: 26px;
+    color: #ff914d;
+    margin: 6px 0 18px;
+  }
+
+  .bar-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #999;
+    text-align: left;
+    margin-bottom: 4px;
+    letter-spacing: 0.3px;
+  }
+
+  .timer-bar-track {
+    width: 100%;
+    height: 16px;
+    background: #f1f1f1;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    border: 2px solid #e6e6e6;
+  }
+  .timer-bar-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #7ee8a0, #57d9c8);
+    border-radius: 999px;
+    transition: width 1s linear, background 0.4s ease;
+  }
+  .timer-bar-fill.timer-warning {
+    background: linear-gradient(90deg, #ffd15e, #ffb037);
+  }
+  .timer-bar-fill.timer-danger {
+    background: linear-gradient(90deg, #ff8a8a, #ff5252);
+    animation: pulseBar 0.6s ease-in-out infinite;
+  }
+  @keyframes pulseBar {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .progress-label { color: #b48ce0; }
+
+  .progress-track {
+    width: 100%;
+    height: 22px;
+    background: repeating-linear-gradient(
+      90deg,
+      #f4ecff 0px, #f4ecff 6px,
+      #ffffff 6px, #ffffff 8px
+    );
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 22px;
+    border: 2px solid #e3d3ff;
+    padding: 3px;
+    display: flex;
+    gap: 3px;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: repeating-linear-gradient(
+      90deg,
+      #c9a4ff 0px, #c9a4ff 14px,
+      #b98cf0 14px, #b98cf0 18px
+    );
+    border-radius: 6px;
+    transition: width 0.35s ease;
+  }
+
+  .question-box {
+    background: #fdf6ff;
+    border-radius: 22px;
+    padding: 30px 10px;
+    margin-bottom: 24px;
+    border: 4px dashed #d9b8ff;
+  }
+
+  .question-text {
+    font-size: 54px;
+    font-weight: bold;
+    color: #5b4b8a;
+    letter-spacing: 2px;
+  }
+
+  .answer-display {
+    background: #fffaf0;
+    border: 4px solid #ffd9a0;
+    border-radius: 18px;
+    padding: 14px 10px;
+    margin-bottom: 18px;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .answer-display.correct-display {
+    background: #e6ffe0;
+    border-color: #57d968;
+  }
+  .answer-display.wrong-display {
+    background: #ffe9e9;
+    border-color: #ff6b6b;
+  }
+
+  #answerText {
+    font-size: 40px;
+    font-weight: bold;
+    color: #5b4b8a;
+    letter-spacing: 4px;
+  }
+
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .num-btn {
+    font-size: 28px;
+    font-weight: bold;
+    padding: 16px 0;
+    border-radius: 16px;
+    border: none;
+    cursor: pointer;
+    color: white;
+    background: #6fc3ff;
+    box-shadow: 0 6px 0 #3f9fe0;
+    transition: transform 0.08s ease;
+  }
+  .num-btn:active {
+    transform: translateY(4px);
+    box-shadow: none;
+  }
+
+  .clear-btn {
+    background: #ffb37a;
+    box-shadow: 0 6px 0 #e08a45;
+  }
+
+  .enter-btn {
+    background: #7ee39a;
+    box-shadow: 0 6px 0 #4bb668;
+  }
+
+  .num-btn.correct {
+    background: #57d968 !important;
+    box-shadow: 0 6px 0 #2f9e3d !important;
+  }
+  .num-btn.wrong {
+    background: #ff6b6b !important;
+    box-shadow: 0 6px 0 #cc4444 !important;
+  }
+
+  .feedback {
+    font-size: 22px;
+    font-weight: bold;
+    min-height: 32px;
+    margin-top: 14px;
+  }
+
+  .start-screen, .end-screen {
+    padding: 10px 0 6px;
+  }
+
+  .big-emoji {
+    font-size: 70px;
+    margin-bottom: 6px;
+  }
+
+  .start-btn, .again-btn {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    padding: 16px 36px;
+    border-radius: 999px;
+    border: none;
+    color: white;
+    background: linear-gradient(90deg, #ff9d5c, #ff6f91);
+    box-shadow: 0 6px 0 #d95a70;
+    cursor: pointer;
+  }
+  .start-btn:active, .again-btn:active {
+    transform: translateY(4px);
+    box-shadow: none;
+  }
+
+  .hidden { display: none; }
+
+  .stars {
+    font-size: 40px;
+    margin: 14px 0;
+    letter-spacing: 6px;
+  }
+
+  .result-text {
+    font-size: 20px;
+    color: #555;
+    margin-top: 6px;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.9); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  .pop { animation: pop 0.25s ease; }
+
+  @media (max-width: 380px) {
+    .question-text { font-size: 42px; }
+    .num-btn { font-size: 22px; padding: 13px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+
+  <!-- START SCREEN -->
+  <div class="start-screen" id="startScreen">
+    <div class="big-emoji">🧮🐣</div>
+    <h1>Let's Play Math!</h1>
+    <p style="font-size:18px; color:#777;">25 fun questions<br>90 seconds<br>Add and subtract up to 20 🎈</p>
+    <button class="start-btn" onclick="startQuiz()">▶ START</button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="hidden" id="quizScreen">
+    <div class="topbar">
+      <div class="pill timer">⏱️ <span id="timeLeft">90</span>s</div>
+      <div class="pill score">⭐ <span id="score">0</span></div>
+    </div>
+    <div class="bar-label">⏱️ Time Left</div>
+    <div class="timer-bar-track">
+      <div class="timer-bar-fill" id="timerBarFill"></div>
+    </div>
+    <div class="bar-label progress-label">📋 Question <span id="qNumLabel">1</span> of 25</div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="question-box" id="questionBox">
+      <div class="question-text" id="questionText">2 + 3 = ?</div>
+    </div>
+
+    <div class="answer-display" id="answerDisplay">
+      <span id="answerText">&nbsp;</span>
+    </div>
+
+    <div class="numpad" id="numpad">
+      <button class="num-btn" onclick="pressDigit(1)">1</button>
+      <button class="num-btn" onclick="pressDigit(2)">2</button>
+      <button class="num-btn" onclick="pressDigit(3)">3</button>
+      <button class="num-btn" onclick="pressDigit(4)">4</button>
+      <button class="num-btn" onclick="pressDigit(5)">5</button>
+      <button class="num-btn" onclick="pressDigit(6)">6</button>
+      <button class="num-btn" onclick="pressDigit(7)">7</button>
+      <button class="num-btn" onclick="pressDigit(8)">8</button>
+      <button class="num-btn" onclick="pressDigit(9)">9</button>
+      <button class="num-btn clear-btn" onclick="pressClear()">⌫</button>
+      <button class="num-btn" onclick="pressDigit(0)">0</button>
+      <button class="num-btn enter-btn" onclick="pressEnter()">✓</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div class="hidden end-screen" id="endScreen">
+    <div class="big-emoji" id="endEmoji">🎉</div>
+    <h1 id="endTitle">Great Job!</h1>
+    <div class="stars" id="starsBox">⭐⭐⭐</div>
+    <div class="result-text" id="resultText">You got 0 out of 25 correct!</div>
+    <button class="again-btn" onclick="startQuiz()">🔁 Play Again</button>
+  </div>
+
+</div>
+
+<script>
+const TOTAL_QUESTIONS = 25;
+const TIME_LIMIT = 90;
+
+let questions = [];
+let currentIndex = 0;
+let score = 0;
+let timeLeft = TIME_LIMIT;
+let timerInterval = null;
+let answered = false;
+let currentInput = "";
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Generate a question where the answer is guaranteed between 0 and 20
+function generateQuestion() {
+  const isAddition = Math.random() < 0.5;
+  let a, b, answer, opSymbol;
+
+  if (isAddition) {
+    // a + b, both a and b within 1-20, answer within 1-20 (2-20 realistically)
+    answer = randInt(2, 20);
+    a = randInt(1, answer - 1);
+    b = answer - a;
+    opSymbol = "+";
+  } else {
+    // a - b, a within 2-20, b within 1 to a-1, so answer is within 1-20 (no zero)
+    a = randInt(2, 20);
+    b = randInt(1, a - 1);
+    answer = a - b;
+    opSymbol = "-";
+  }
+
+  return {
+    text: `${a} ${opSymbol} ${b} = ?`,
+    answer: answer
+  };
+}
+
+function buildQuestions() {
+  questions = [];
+  for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+    questions.push(generateQuestion());
+  }
+}
+
+function startQuiz() {
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("endScreen").classList.add("hidden");
+  document.getElementById("quizScreen").classList.remove("hidden");
+
+  buildQuestions();
+  currentIndex = 0;
+  score = 0;
+  answered = false;
+
+  document.getElementById("score").textContent = score;
+  document.getElementById("progressFill").style.width = "0%";
+
+  showQuestion();
+}
+
+function showQuestion() {
+  answered = false;
+  currentInput = "";
+  const q = questions[currentIndex];
+  document.getElementById("questionText").textContent = q.text;
+  document.getElementById("feedback").textContent = "";
+  updateAnswerDisplay();
+
+  const pct = (currentIndex / TOTAL_QUESTIONS) * 100;
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("qNumLabel").textContent = currentIndex + 1;
+
+  document.querySelectorAll(".num-btn").forEach(b => {
+    b.disabled = false;
+    b.classList.remove("correct", "wrong");
+  });
+
+  const box = document.getElementById("questionBox");
+  box.classList.remove("pop");
+  void box.offsetWidth;
+  box.classList.add("pop");
+
+  // Reset timer to full 90 seconds for this question
+  timeLeft = TIME_LIMIT;
+  document.getElementById("timeLeft").textContent = timeLeft;
+  const timerBar = document.getElementById("timerBarFill");
+  timerBar.style.width = "100%";
+  timerBar.classList.remove("timer-warning", "timer-danger");
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timeLeft").textContent = timeLeft;
+    updateTimerBar();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      handleTimeout();
+    }
+  }, 1000);
+}
+
+function updateTimerBar() {
+  const timerBar = document.getElementById("timerBarFill");
+  const pct = Math.max(0, (timeLeft / TIME_LIMIT) * 100);
+  timerBar.style.width = pct + "%";
+  timerBar.classList.remove("timer-warning", "timer-danger");
+  if (timeLeft <= 15) {
+    timerBar.classList.add("timer-danger");
+  } else if (timeLeft <= 30) {
+    timerBar.classList.add("timer-warning");
+  }
+}
+
+function updateAnswerDisplay() {
+  document.getElementById("answerText").innerHTML = currentInput.length ? currentInput : "&nbsp;";
+}
+
+function pressDigit(d) {
+  if (answered) return;
+  if (currentInput.length >= 2) return;
+  currentInput += String(d);
+  updateAnswerDisplay();
+}
+
+function pressClear() {
+  if (answered) return;
+  currentInput = "";
+  updateAnswerDisplay();
+}
+
+function pressEnter() {
+  if (answered) return;
+  if (currentInput.length === 0) return;
+  checkAnswer(parseInt(currentInput, 10));
+}
+
+function handleTimeout() {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentIndex];
+  document.querySelectorAll(".num-btn").forEach(b => b.disabled = true);
+  document.getElementById("answerText").textContent = q.answer;
+  document.getElementById("feedback").textContent = `⏰ Time's up! Answer: ${q.answer}`;
+  document.getElementById("feedback").style.color = "#e08a00";
+
+  setTimeout(() => {
+    currentIndex++;
+    if (currentIndex >= TOTAL_QUESTIONS) {
+      endQuiz();
+    } else {
+      showQuestion();
+    }
+  }, 1200);
+}
+
+function checkAnswer(value) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+
+  const q = questions[currentIndex];
+  document.querySelectorAll(".num-btn").forEach(b => b.disabled = true);
+
+  if (value === q.answer) {
+    score++;
+    document.getElementById("score").textContent = score;
+    document.getElementById("answerDisplay").classList.add("correct-display");
+    document.getElementById("feedback").textContent = "🎉 Yay! Correct!";
+    document.getElementById("feedback").style.color = "#2a9d2a";
+  } else {
+    document.getElementById("answerDisplay").classList.add("wrong-display");
+    document.getElementById("answerText").textContent = `${value} ❌  →  ${q.answer}`;
+    document.getElementById("feedback").textContent = `😊 Good try! Answer: ${q.answer}`;
+    document.getElementById("feedback").style.color = "#e08a00";
+  }
+
+  setTimeout(() => {
+    document.getElementById("answerDisplay").classList.remove("correct-display", "wrong-display");
+    currentIndex++;
+    if (currentIndex >= TOTAL_QUESTIONS) {
+      endQuiz();
+    } else {
+      showQuestion();
+    }
+  }, 1000);
+}
+
+function endQuiz() {
+  clearInterval(timerInterval);
+  document.getElementById("quizScreen").classList.add("hidden");
+  document.getElementById("endScreen").classList.remove("hidden");
+  document.getElementById("progressFill").style.width = "100%";
+
+  document.getElementById("resultText").textContent = `You got ${score} out of ${TOTAL_QUESTIONS} correct!`;
+
+  let stars = "⭐";
+  let emoji = "🙂";
+  let title = "Nice Try!";
+  const ratio = score / TOTAL_QUESTIONS;
+  if (ratio >= 0.8) { stars = "⭐⭐⭐"; emoji = "🏆"; title = "Super Star!"; }
+  else if (ratio >= 0.5) { stars = "⭐⭐"; emoji = "🎉"; title = "Great Job!"; }
+  else { stars = "⭐"; emoji = "🙂"; title = "Nice Try!"; }
+
+  document.getElementById("starsBox").textContent = stars;
+  document.getElementById("endEmoji").textContent = emoji;
+  document.getElementById("endTitle").textContent = title;
+}
+</script>
+
+</body>
+</html>
