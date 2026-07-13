@@ -226,6 +226,45 @@
     margin-bottom: 6px;
   }
 
+  .mode-label {
+    font-size: 16px;
+    font-weight: bold;
+    color: #999;
+    margin-top: 18px;
+    margin-bottom: 10px;
+  }
+
+  .mode-select {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .mode-btn {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 14px 4px;
+    border-radius: 16px;
+    border: 3px solid #eee;
+    background: #fafafa;
+    color: #888;
+    cursor: pointer;
+    line-height: 1.5;
+    transition: transform 0.08s ease, border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .mode-btn:active {
+    transform: translateY(2px);
+  }
+  .mode-btn.selected {
+    border-color: #ff9d5c;
+    background: #fff3e8;
+    color: #d9722f;
+  }
+  #modeAdd.selected { border-color: #6fc3ff; background: #eaf7ff; color: #2b7fc4; }
+  #modeSub.selected { border-color: #ff9ecb; background: #fff0f7; color: #d9558f; }
+  #modeMix.selected { border-color: #9ee6a0; background: #eefff0; color: #3d9a41; }
+
   .start-btn, .again-btn {
     margin-top: 20px;
     font-size: 24px;
@@ -278,7 +317,15 @@
   <div class="start-screen" id="startScreen">
     <div class="big-emoji">🧮🐣</div>
     <h1>Let's Play Math!</h1>
-    <p style="font-size:18px; color:#777;">25 fun questions<br>90 seconds<br>Add and subtract up to 20 🎈</p>
+    <p style="font-size:18px; color:#777;">25 fun questions<br>90 seconds each<br>Numbers 1 to 20 🎈</p>
+
+    <div class="mode-label">Pick a game:</div>
+    <div class="mode-select">
+      <button class="mode-btn" id="modeAdd" onclick="chooseMode('add')">➕<br>Addition</button>
+      <button class="mode-btn" id="modeSub" onclick="chooseMode('sub')">➖<br>Subtraction</button>
+      <button class="mode-btn" id="modeMix" onclick="chooseMode('mix')">🔀<br>Mixed</button>
+    </div>
+
     <button class="start-btn" onclick="startQuiz()">▶ START</button>
   </div>
 
@@ -328,7 +375,7 @@
     <h1 id="endTitle">Great Job!</h1>
     <div class="stars" id="starsBox">⭐⭐⭐</div>
     <div class="result-text" id="resultText">You got 0 out of 25 correct!</div>
-    <button class="again-btn" onclick="startQuiz()">🔁 Play Again</button>
+    <button class="again-btn" onclick="backToStart()">🔁 Play Again</button>
   </div>
 
 </div>
@@ -344,14 +391,27 @@ let timeLeft = TIME_LIMIT;
 let timerInterval = null;
 let answered = false;
 let currentInput = "";
+let quizMode = "mix"; // 'add', 'sub', or 'mix'
+
+function chooseMode(mode) {
+  quizMode = mode;
+  document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("selected"));
+  if (mode === "add") document.getElementById("modeAdd").classList.add("selected");
+  if (mode === "sub") document.getElementById("modeSub").classList.add("selected");
+  if (mode === "mix") document.getElementById("modeMix").classList.add("selected");
+}
 
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Generate a question where the answer is guaranteed between 0 and 20
+// Generate a question where the answer is guaranteed between 1 and 20
 function generateQuestion() {
-  const isAddition = Math.random() < 0.5;
+  let isAddition;
+  if (quizMode === "add") isAddition = true;
+  else if (quizMode === "sub") isAddition = false;
+  else isAddition = Math.random() < 0.5;
+
   let a, b, answer, opSymbol;
 
   if (isAddition) {
@@ -376,174 +436,3 @@ function generateQuestion() {
 
 function buildQuestions() {
   questions = [];
-  for (let i = 0; i < TOTAL_QUESTIONS; i++) {
-    questions.push(generateQuestion());
-  }
-}
-
-function startQuiz() {
-  document.getElementById("startScreen").classList.add("hidden");
-  document.getElementById("endScreen").classList.add("hidden");
-  document.getElementById("quizScreen").classList.remove("hidden");
-
-  buildQuestions();
-  currentIndex = 0;
-  score = 0;
-  answered = false;
-
-  document.getElementById("score").textContent = score;
-  document.getElementById("progressFill").style.width = "0%";
-
-  showQuestion();
-}
-
-function showQuestion() {
-  answered = false;
-  currentInput = "";
-  const q = questions[currentIndex];
-  document.getElementById("questionText").textContent = q.text;
-  document.getElementById("feedback").textContent = "";
-  updateAnswerDisplay();
-
-  const pct = (currentIndex / TOTAL_QUESTIONS) * 100;
-  document.getElementById("progressFill").style.width = pct + "%";
-  document.getElementById("qNumLabel").textContent = currentIndex + 1;
-
-  document.querySelectorAll(".num-btn").forEach(b => {
-    b.disabled = false;
-    b.classList.remove("correct", "wrong");
-  });
-
-  const box = document.getElementById("questionBox");
-  box.classList.remove("pop");
-  void box.offsetWidth;
-  box.classList.add("pop");
-
-  // Reset timer to full 90 seconds for this question
-  timeLeft = TIME_LIMIT;
-  document.getElementById("timeLeft").textContent = timeLeft;
-  const timerBar = document.getElementById("timerBarFill");
-  timerBar.style.width = "100%";
-  timerBar.classList.remove("timer-warning", "timer-danger");
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    document.getElementById("timeLeft").textContent = timeLeft;
-    updateTimerBar();
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      handleTimeout();
-    }
-  }, 1000);
-}
-
-function updateTimerBar() {
-  const timerBar = document.getElementById("timerBarFill");
-  const pct = Math.max(0, (timeLeft / TIME_LIMIT) * 100);
-  timerBar.style.width = pct + "%";
-  timerBar.classList.remove("timer-warning", "timer-danger");
-  if (timeLeft <= 15) {
-    timerBar.classList.add("timer-danger");
-  } else if (timeLeft <= 30) {
-    timerBar.classList.add("timer-warning");
-  }
-}
-
-function updateAnswerDisplay() {
-  document.getElementById("answerText").innerHTML = currentInput.length ? currentInput : "&nbsp;";
-}
-
-function pressDigit(d) {
-  if (answered) return;
-  if (currentInput.length >= 2) return;
-  currentInput += String(d);
-  updateAnswerDisplay();
-}
-
-function pressClear() {
-  if (answered) return;
-  currentInput = "";
-  updateAnswerDisplay();
-}
-
-function pressEnter() {
-  if (answered) return;
-  if (currentInput.length === 0) return;
-  checkAnswer(parseInt(currentInput, 10));
-}
-
-function handleTimeout() {
-  if (answered) return;
-  answered = true;
-  const q = questions[currentIndex];
-  document.querySelectorAll(".num-btn").forEach(b => b.disabled = true);
-  document.getElementById("answerText").textContent = q.answer;
-  document.getElementById("feedback").textContent = `⏰ Time's up! Answer: ${q.answer}`;
-  document.getElementById("feedback").style.color = "#e08a00";
-
-  setTimeout(() => {
-    currentIndex++;
-    if (currentIndex >= TOTAL_QUESTIONS) {
-      endQuiz();
-    } else {
-      showQuestion();
-    }
-  }, 1200);
-}
-
-function checkAnswer(value) {
-  if (answered) return;
-  answered = true;
-  clearInterval(timerInterval);
-
-  const q = questions[currentIndex];
-  document.querySelectorAll(".num-btn").forEach(b => b.disabled = true);
-
-  if (value === q.answer) {
-    score++;
-    document.getElementById("score").textContent = score;
-    document.getElementById("answerDisplay").classList.add("correct-display");
-    document.getElementById("feedback").textContent = "🎉 Yay! Correct!";
-    document.getElementById("feedback").style.color = "#2a9d2a";
-  } else {
-    document.getElementById("answerDisplay").classList.add("wrong-display");
-    document.getElementById("answerText").textContent = `${value} ❌  →  ${q.answer}`;
-    document.getElementById("feedback").textContent = `😊 Good try! Answer: ${q.answer}`;
-    document.getElementById("feedback").style.color = "#e08a00";
-  }
-
-  setTimeout(() => {
-    document.getElementById("answerDisplay").classList.remove("correct-display", "wrong-display");
-    currentIndex++;
-    if (currentIndex >= TOTAL_QUESTIONS) {
-      endQuiz();
-    } else {
-      showQuestion();
-    }
-  }, 1000);
-}
-
-function endQuiz() {
-  clearInterval(timerInterval);
-  document.getElementById("quizScreen").classList.add("hidden");
-  document.getElementById("endScreen").classList.remove("hidden");
-  document.getElementById("progressFill").style.width = "100%";
-
-  document.getElementById("resultText").textContent = `You got ${score} out of ${TOTAL_QUESTIONS} correct!`;
-
-  let stars = "⭐";
-  let emoji = "🙂";
-  let title = "Nice Try!";
-  const ratio = score / TOTAL_QUESTIONS;
-  if (ratio >= 0.8) { stars = "⭐⭐⭐"; emoji = "🏆"; title = "Super Star!"; }
-  else if (ratio >= 0.5) { stars = "⭐⭐"; emoji = "🎉"; title = "Great Job!"; }
-  else { stars = "⭐"; emoji = "🙂"; title = "Nice Try!"; }
-
-  document.getElementById("starsBox").textContent = stars;
-  document.getElementById("endEmoji").textContent = emoji;
-  document.getElementById("endTitle").textContent = title;
-}
-</script>
-
-</body>
-</html>
