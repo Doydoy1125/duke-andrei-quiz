@@ -17,6 +17,15 @@
     padding: 16px;
   }
 
+  .app-wrapper {
+    width: 100%;
+    max-width: 620px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
   .card {
     width: 100%;
     max-width: 480px;
@@ -174,6 +183,84 @@
     gap: 12px;
   }
 
+  .dot-panel {
+    flex: 0 0 130px;
+    background: #ffffff;
+    border-radius: 28px;
+    box-shadow: 0 10px 0 #d9c4ff, 0 16px 30px rgba(0,0,0,0.08);
+    padding: 18px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dot-panel-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #b48ce0;
+    margin-bottom: 2px;
+  }
+
+  .dot-btn {
+    width: 100%;
+    font-size: 30px;
+    font-weight: bold;
+    padding: 12px 0;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    color: white;
+    transition: transform 0.08s ease;
+    flex-shrink: 0;
+  }
+  .dot-btn:active {
+    transform: translateY(3px);
+    box-shadow: none !important;
+  }
+
+  .plus-btn {
+    background: #9ee6a0;
+    box-shadow: 0 5px 0 #62c46a;
+  }
+
+  .minus-btn {
+    background: #ff9ecb;
+    box-shadow: 0 5px 0 #e56ea3;
+  }
+
+  .dot-display {
+    width: 100%;
+    flex: 1;
+    background: #f6f1ff;
+    border: 3px solid #e3d3ff;
+    border-radius: 14px;
+    padding: 8px 6px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    justify-content: center;
+    gap: 5px;
+    min-height: 220px;
+    max-height: 340px;
+    overflow-y: auto;
+  }
+
+  .dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #b98cf0;
+    flex-shrink: 0;
+    animation: dotPop 0.2s ease;
+  }
+
+  @keyframes dotPop {
+    0% { transform: scale(0); }
+    70% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
   .num-btn {
     font-size: 28px;
     font-weight: bold;
@@ -294,13 +381,42 @@
   }
   .pop { animation: pop 0.25s ease; }
 
+  @media (max-width: 680px) {
+    .app-wrapper {
+      flex-direction: column;
+      align-items: center;
+    }
+    .dot-panel {
+      flex: none;
+      width: 100%;
+      max-width: 480px;
+      flex-direction: row;
+    }
+    .dot-panel-label {
+      writing-mode: vertical-rl;
+      margin: 0;
+      flex-shrink: 0;
+    }
+    .dot-btn {
+      width: 60px;
+    }
+    .dot-display {
+      min-height: 70px;
+      max-height: 90px;
+    }
+  }
+
   @media (max-width: 380px) {
     .question-text { font-size: 42px; }
     .num-btn { font-size: 22px; padding: 13px 0; }
+    .dot-btn { font-size: 24px; padding: 8px 12px; }
+    .dot { width: 13px; height: 13px; }
   }
 </style>
 </head>
 <body>
+
+<div class="app-wrapper">
 
 <div class="card" id="card">
 
@@ -371,6 +487,16 @@
 
 </div>
 
+<!-- DOT COUNTER PANEL (separate division, shown only during the quiz) -->
+<div class="dot-panel hidden" id="dotPanel">
+  <div class="dot-panel-label">🔢 Count</div>
+  <button class="dot-btn plus-btn" onclick="addDot()">+</button>
+  <div class="dot-display" id="dotDisplay"></div>
+  <button class="dot-btn minus-btn" onclick="removeDot()">−</button>
+</div>
+
+</div>
+
 <script>
 const TOTAL_QUESTIONS = 25;
 const TIME_LIMIT = 90;
@@ -382,6 +508,7 @@ let timeLeft = TIME_LIMIT;
 let timerInterval = null;
 let answered = false;
 let currentInput = "";
+let dotCount = 0;
 let quizMode = "mix"; // 'add', 'sub', or 'mix'
 
 function chooseMode(mode) {
@@ -433,6 +560,7 @@ function buildQuestions() {
 function backToStart() {
   document.getElementById("endScreen").classList.add("hidden");
   document.getElementById("quizScreen").classList.add("hidden");
+  document.getElementById("dotPanel").classList.add("hidden");
   document.getElementById("startScreen").classList.remove("hidden");
   chooseMode("mix");
 }
@@ -441,6 +569,7 @@ function startQuiz() {
   document.getElementById("startScreen").classList.add("hidden");
   document.getElementById("endScreen").classList.add("hidden");
   document.getElementById("quizScreen").classList.remove("hidden");
+  document.getElementById("dotPanel").classList.remove("hidden");
 
   buildQuestions();
   currentIndex = 0;
@@ -456,10 +585,12 @@ function startQuiz() {
 function showQuestion() {
   answered = false;
   currentInput = "";
+  dotCount = 0;
   const q = questions[currentIndex];
   document.getElementById("questionText").textContent = q.text;
   document.getElementById("feedback").textContent = "";
   updateAnswerDisplay();
+  renderDots();
 
   const pct = (currentIndex / TOTAL_QUESTIONS) * 100;
   document.getElementById("progressFill").style.width = pct + "%";
@@ -469,6 +600,7 @@ function showQuestion() {
     b.disabled = false;
     b.classList.remove("correct", "wrong");
   });
+  document.querySelectorAll(".dot-btn").forEach(b => b.disabled = false);
 
   const box = document.getElementById("questionBox");
   box.classList.remove("pop");
@@ -528,11 +660,36 @@ function pressEnter() {
   checkAnswer(parseInt(currentInput, 10));
 }
 
+function renderDots() {
+  const display = document.getElementById("dotDisplay");
+  display.innerHTML = "";
+  for (let i = 0; i < dotCount; i++) {
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    display.appendChild(dot);
+  }
+}
+
+function addDot() {
+  if (answered) return;
+  if (dotCount >= 20) return;
+  dotCount++;
+  renderDots();
+}
+
+function removeDot() {
+  if (answered) return;
+  if (dotCount <= 0) return;
+  dotCount--;
+  renderDots();
+}
+
 function handleTimeout() {
   if (answered) return;
   answered = true;
   const q = questions[currentIndex];
   document.querySelectorAll(".num-btn").forEach(b => b.disabled = true);
+  document.querySelectorAll(".dot-btn").forEach(b => b.disabled = true);
   document.getElementById("answerText").textContent = q.answer;
   document.getElementById("feedback").textContent = `⏰ Time's up! Answer: ${q.answer}`;
   document.getElementById("feedback").style.color = "#e08a00";
@@ -554,6 +711,7 @@ function checkAnswer(value) {
 
   const q = questions[currentIndex];
   document.querySelectorAll(".num-btn").forEach(b => b.disabled = true);
+  document.querySelectorAll(".dot-btn").forEach(b => b.disabled = true);
 
   if (value === q.answer) {
     score++;
@@ -582,6 +740,7 @@ function checkAnswer(value) {
 function endQuiz() {
   clearInterval(timerInterval);
   document.getElementById("quizScreen").classList.add("hidden");
+  document.getElementById("dotPanel").classList.add("hidden");
   document.getElementById("endScreen").classList.remove("hidden");
   document.getElementById("progressFill").style.width = "100%";
 
