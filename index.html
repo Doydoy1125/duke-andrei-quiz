@@ -532,13 +532,13 @@ function generateQuestion() {
 
   if (isAddition) {
     // a + b, both a and b within 1-20, answer within 1-20 (2-20 realistically)
-    answer = randInt(2, 20);
+    answer = randInt(2, 30);
     a = randInt(1, answer - 1);
     b = answer - a;
     opSymbol = "+";
   } else {
     // a - b, a within 2-20, b within 1 to a-1, so answer is within 1-20 (no zero)
-    a = randInt(2, 20);
+    a = randInt(2, 30);
     b = randInt(1, a - 1);
     answer = a - b;
     opSymbol = "-";
@@ -750,7 +750,7 @@ function endQuiz() {
   let emoji = "🙂";
   let title = "Nice Try!";
   const ratio = score / TOTAL_QUESTIONS;
-  if (ratio >= 0.8) { stars = "⭐⭐⭐"; emoji = "🏆"; title = "Super Star!"; }
+  if (ratio >= 1) { stars = "⭐⭐⭐"; emoji = "🏆"; title = "Super Star!"; }
   else if (ratio >= 0.5) { stars = "⭐⭐"; emoji = "🎉"; title = "Great Job!"; }
   else { stars = "⭐"; emoji = "🙂"; title = "Nice Try!"; }
 
