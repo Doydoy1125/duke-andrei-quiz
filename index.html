@@ -532,13 +532,13 @@ function generateQuestion() {
 
   if (isAddition) {
     // a + b, both a and b within 1-20, answer within 1-20 (2-20 realistically)
-    answer = randInt(2, 30);
+    answer = randInt(2, 20);
     a = randInt(1, answer - 1);
     b = answer - a;
     opSymbol = "+";
   } else {
     // a - b, a within 2-20, b within 1 to a-1, so answer is within 1-20 (no zero)
-    a = randInt(2, 30);
+    a = randInt(2, 20);
     b = randInt(1, a - 1);
     answer = a - b;
     opSymbol = "-";
