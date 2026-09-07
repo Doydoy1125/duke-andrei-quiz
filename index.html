@@ -202,6 +202,109 @@
     margin-bottom: 2px;
   }
 
+  .table-btn {
+    width: 100%;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.4;
+    padding: 10px 0;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    color: white;
+    background: #ffd15e;
+    box-shadow: 0 5px 0 #e0a930;
+    transition: transform 0.08s ease;
+    margin-top: 2px;
+  }
+  .table-btn:active {
+    transform: translateY(3px);
+    box-shadow: none;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(60, 40, 90, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+  }
+
+  .modal-box {
+    background: #ffffff;
+    border-radius: 26px;
+    padding: 22px 18px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 16px 30px rgba(0,0,0,0.2);
+    position: relative;
+    text-align: center;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #ff6b6b;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #cc4444;
+  }
+  .modal-close:active {
+    transform: translateY(3px);
+    box-shadow: none;
+  }
+
+  .modal-title {
+    font-size: 22px;
+    color: #ff914d;
+    margin: 4px 0 16px;
+  }
+
+  .table-grid {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 3px;
+  }
+
+  .table-cell {
+    background: #f6f1ff;
+    border-radius: 6px;
+    padding: 6px 2px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #5b4b8a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+  }
+
+  .table-cell.header-cell {
+    background: #d9b8ff;
+    color: #5b3a8a;
+  }
+
+  .table-cell.corner {
+    background: #ff9d5c;
+    color: white;
+  }
+
+  @media (max-width: 420px) {
+    .table-cell { font-size: 10px; padding: 4px 1px; }
+  }
+
   .dot-btn {
     width: 100%;
     font-size: 30px;
@@ -431,6 +534,7 @@
       <option value="mix">🔀 Mixed</option>
       <option value="add">➕ Addition</option>
       <option value="sub">➖ Subtraction</option>
+      <option value="mul">✖️ Multiplication</option>
     </select>
 
     <button class="start-btn" onclick="startQuiz()">▶ START</button>
@@ -493,8 +597,18 @@
   <button class="dot-btn plus-btn" onclick="addDot()">+</button>
   <div class="dot-display" id="dotDisplay"></div>
   <button class="dot-btn minus-btn" onclick="removeDot()">−</button>
+  <button class="table-btn" onclick="openTable()">📖<br>Table</button>
 </div>
 
+</div>
+
+<!-- MULTIPLICATION TABLE MODAL -->
+<div class="modal-overlay hidden" id="tableModal" onclick="closeTableOnOverlay(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeTable()">✕</button>
+    <h2 class="modal-title">✖️ Times Table</h2>
+    <div class="table-grid" id="tableGrid"></div>
+  </div>
 </div>
 
 <script>
@@ -509,7 +623,7 @@ let timerInterval = null;
 let answered = false;
 let currentInput = "";
 let dotCount = 0;
-let quizMode = "mix"; // 'add', 'sub', or 'mix'
+let quizMode = "mix"; // 'add', 'sub', 'mul', or 'mix'
 
 function chooseMode(mode) {
   quizMode = mode;
@@ -521,27 +635,36 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Generate a question where the answer is guaranteed between 1 and 20
+// Generate a question. Add/Sub answers stay within 1-20.
+// Multiplication uses factors 1-10, so products can go up to 100.
 function generateQuestion() {
-  let isAddition;
-  if (quizMode === "add") isAddition = true;
-  else if (quizMode === "sub") isAddition = false;
-  else isAddition = Math.random() < 0.5;
+  // 'mix' only mixes addition and subtraction (multiplication is its own mode)
+  let opType;
+  if (quizMode === "add") opType = "add";
+  else if (quizMode === "sub") opType = "sub";
+  else if (quizMode === "mul") opType = "mul";
+  else opType = Math.random() < 0.5 ? "add" : "sub";
 
   let a, b, answer, opSymbol;
 
-  if (isAddition) {
+  if (opType === "add") {
     // a + b, both a and b within 1-20, answer within 1-20 (2-20 realistically)
-    answer = randInt(2, 30);
+    answer = randInt(2, 20);
     a = randInt(1, answer - 1);
     b = answer - a;
     opSymbol = "+";
-  } else {
+  } else if (opType === "sub") {
     // a - b, a within 2-20, b within 1 to a-1, so answer is within 1-20 (no zero)
-    a = randInt(2, 30);
+    a = randInt(2, 20);
     b = randInt(1, a - 1);
     answer = a - b;
     opSymbol = "-";
+  } else {
+    // multiplication: factors 1-10, product up to 100
+    a = randInt(1, 10);
+    b = randInt(1, 10);
+    answer = a * b;
+    opSymbol = "×";
   }
 
   return {
@@ -643,7 +766,7 @@ function updateAnswerDisplay() {
 
 function pressDigit(d) {
   if (answered) return;
-  if (currentInput.length >= 2) return;
+  if (currentInput.length >= 3) return;
   currentInput += String(d);
   updateAnswerDisplay();
 }
@@ -672,7 +795,7 @@ function renderDots() {
 
 function addDot() {
   if (answered) return;
-  if (dotCount >= 30) return;
+  if (dotCount >= 100) return;
   dotCount++;
   renderDots();
 }
@@ -682,6 +805,59 @@ function removeDot() {
   if (dotCount <= 0) return;
   dotCount--;
   renderDots();
+}
+
+let tableBuilt = false;
+
+function buildTableGrid() {
+  const grid = document.getElementById("tableGrid");
+  grid.innerHTML = "";
+
+  // top-left blank corner
+  const corner = document.createElement("div");
+  corner.className = "table-cell corner";
+  corner.textContent = "×";
+  grid.appendChild(corner);
+
+  // header row (1-10)
+  for (let c = 1; c <= 10; c++) {
+    const headCell = document.createElement("div");
+    headCell.className = "table-cell header-cell";
+    headCell.textContent = c;
+    grid.appendChild(headCell);
+  }
+
+  // rows
+  for (let r = 1; r <= 10; r++) {
+    const rowHead = document.createElement("div");
+    rowHead.className = "table-cell header-cell";
+    rowHead.textContent = r;
+    grid.appendChild(rowHead);
+
+    for (let c = 1; c <= 10; c++) {
+      const cell = document.createElement("div");
+      cell.className = "table-cell";
+      cell.textContent = r * c;
+      grid.appendChild(cell);
+    }
+  }
+
+  tableBuilt = true;
+}
+
+function openTable() {
+  if (!tableBuilt) buildTableGrid();
+  document.getElementById("tableModal").classList.remove("hidden");
+}
+
+function closeTable() {
+  document.getElementById("tableModal").classList.add("hidden");
+}
+
+function closeTableOnOverlay(event) {
+  if (event.target.id === "tableModal") {
+    closeTable();
+  }
 }
 
 function handleTimeout() {
@@ -750,7 +926,7 @@ function endQuiz() {
   let emoji = "🙂";
   let title = "Nice Try!";
   const ratio = score / TOTAL_QUESTIONS;
-  if (ratio >= 1) { stars = "⭐⭐⭐"; emoji = "🏆"; title = "Super Star!"; }
+  if (ratio >= 0.8) { stars = "⭐⭐⭐"; emoji = "🏆"; title = "Super Star!"; }
   else if (ratio >= 0.5) { stars = "⭐⭐"; emoji = "🎉"; title = "Great Job!"; }
   else { stars = "⭐"; emoji = "🙂"; title = "Nice Try!"; }
 
